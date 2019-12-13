@@ -1,7 +1,7 @@
 name:                homophone
 version:             0.1.0.0
-github:              "mdippery/homophone"
-license:             BSD3
+github:              "mdippery/homophone.hs"
+license:             LGPL-3
 author:              "Michael Dippery"
 maintainer:          "michael@monkey-robot.com"
 copyright:           "2019 Michael Dippery"
