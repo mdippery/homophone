@@ -33,7 +33,23 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 --
 ------------------------------------------------------------------------------
 
-module Spotify.Auth where
+module Spotify.Auth
+  (
+    -- * Types
+    Credentials(..)
+
+    -- * Spotify API
+
+    -- ** Operations
+  , authorize
+
+    -- ** Results
+  , Authorization(..)
+
+    -- * Helpers
+  , authRequest
+  , basicAuthorizationToken
+  ) where
 
 import Data.List    (intercalate)
 
@@ -54,7 +70,7 @@ data Credentials = Credentials
 instance Show Credentials where
   show Credentials{..} = intercalate ":" [clientIdentifier, clientSecret]
 
--- | Spotify authorization tokens
+-- | Spotify authorization tokens.
 data Authorization = Authorization
   { accessToken :: String   -- ^ Access token for requests to the Spotify API
   , tokenType :: String     -- ^ Type of token
