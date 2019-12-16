@@ -45,6 +45,7 @@ module Spotify.Auth
 
     -- ** Results
   , Authorization(..)
+  , authorization
 
     -- * Helpers
   , authRequest
@@ -82,6 +83,10 @@ instance FromJSON Authorization where
     <$> v .: "access_token"
     <*> v .: "token_type"
     <*> v .: "expires_in"
+
+-- | Creates a new authorization object with the given access token.
+authorization :: String -> Authorization
+authorization = flip (flip Authorization "bearer") maxBound
 
 -- | Authorization header payload for the given Spotify credentials.
 basicAuthorizationToken :: Credentials -> String
