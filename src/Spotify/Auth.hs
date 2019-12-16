@@ -35,13 +35,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 module Spotify.Auth where
 
-import Data.List (intercalate)
+import Data.List    (intercalate)
 
+import Data.Aeson             ((.:), FromJSON(..), withObject)
 import Data.ByteString        (ByteString)
 import Data.ByteString.Base64 (encode)
 import Data.ByteString.Char8  (pack, unpack)
 import Network.HTTP.Client    (Request)
-import Network.HTTP.Simple    (setRequestBodyLBS, setRequestHeader)
+import Network.HTTP.Simple    (httpJSON, getResponseBody, setRequestBodyURLEncoded, setRequestHeader)
 
 -- | Credentials needed for access to parts of the Spotify API that do not
 -- require authorization.
@@ -53,6 +54,19 @@ data Credentials = Credentials
 instance Show Credentials where
   show Credentials{..} = intercalate ":" [clientIdentifier, clientSecret]
 
+-- | Spotify authorization tokens
+data Authorization = Authorization
+  { accessToken :: String   -- ^ Access token for requests to the Spotify API
+  , tokenType :: String     -- ^ Type of token
+  , expiresIn :: Int        -- ^ Expiration time, in seconds from creation
+  } deriving Show
+
+instance FromJSON Authorization where
+  parseJSON = withObject "Authorization" $ \v -> Authorization
+    <$> v .: "access_token"
+    <*> v .: "token_type"
+    <*> v .: "expires_in"
+
 -- | Authorization header payload for the given Spotify credentials.
 basicAuthorizationToken :: Credentials -> String
 basicAuthorizationToken = unpack . encode . pack . show
@@ -62,5 +76,13 @@ basicAuthorizationToken = unpack . encode . pack . show
 authRequest :: Credentials -> Request
 authRequest creds
   = setRequestHeader "Authorization" [pack ("Basic " ++ basicAuthorizationToken creds)]
-  $ setRequestBodyLBS "grant_type=client_credentials"
+  $ setRequestBodyURLEncoded [("grant_type", "client_credentials")]
   $ "POST https://accounts.spotify.com/api/token"
+
+-- | Request a new access token from the Spotify API using the given
+-- credentials.
+authorize :: Credentials -> IO Authorization
+authorize creds = do
+  let request = authRequest creds
+  response <- httpJSON request
+  return $ getResponseBody response
