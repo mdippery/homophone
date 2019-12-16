@@ -23,9 +23,17 @@ module Spotify.Artist
   (
     -- * Types
     Artist(..)
+
+    -- * Helpers
+  , searchRequest
   ) where
 
-import Data.Aeson ((.:), FromJSON(..), withObject)
+import Data.Aeson             ((.:), FromJSON(..), withObject)
+import Data.ByteString.Char8  (pack)
+import Network.HTTP.Client    (Request)
+import Network.HTTP.Simple    (setRequestHeader, setRequestQueryString)
+
+import Spotify.Auth (Credentials, basicAuthorizationToken)
 
 data Artist = Artist
   { spotifyId :: String
@@ -42,3 +50,9 @@ instance FromJSON Artist where
     <*> v .: "name"
     <*> v .: "genres"
     <*> v .: "popularity"
+
+searchRequest :: Credentials -> String -> Request
+searchRequest creds artist
+  = setRequestHeader "Authorization" [pack ("Basic " ++ basicAuthorizationToken creds)]
+  $ setRequestQueryString [("type", Just "artist"), ("q", Just (pack artist))]
+  $ "GET https://api.spotify.com/v1/search"
