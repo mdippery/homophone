@@ -44,8 +44,11 @@ module Spotify.Artist
   , relatedArtists
   , search
 
+    -- ** URLs
+  , relatedArtistsUrl
+
     -- * Helpers
-  , relatedArtistRequest
+  , relatedArtistsRequest
   , searchRequest
   ) where
 
@@ -66,7 +69,7 @@ import Spotify.Auth (Authorization(..), basicAuthorizationToken)
 data Artist = Artist
   { spotifyId :: String   -- ^ Spotify ID number
   , spotifyUri :: String  -- ^ Spotify URI
-  , href :: String
+  , artistUrl :: String   -- ^ URL for obtaining artist info from the Spotify API
   , name :: String        -- ^ Artist's name
   , genres :: [String]    -- ^ Musical genres associated with the artist
   , popularity :: Int     -- ^ Artist's popularity rating on Spotify
@@ -103,13 +106,18 @@ searchRequest Authorization{..} artist
 
 -- | Builds a request for related artists using the given artist and
 -- authorization token.
-relatedArtistRequest :: Authorization -> Artist -> Request
-relatedArtistRequest Authorization{..} Artist{..}
+relatedArtistsRequest :: Authorization -> Artist -> Request
+relatedArtistsRequest Authorization{..} artist
   = H.setRequestHeader "Authorization" [pack ("Bearer " ++ accessToken)]
   $ H.setRequestMethod "GET"
-  $ H.setRequestHost (pack $ uriRegName $ fromJust $ uriAuthority $ fromJust $ parseURI href)
-  $ H.setRequestPath (pack $ intercalate "/" [(uriPath $ fromJust $ parseURI href), "related-artists"])
+  $ H.setRequestHost (pack $ uriRegName $ fromJust $ uriAuthority $ fromJust $ parseURI $ artistUrl artist)
+  $ H.setRequestPath (pack $ relatedArtistsUrl artist)
   $ H.defaultRequest
+
+-- | URL for retrieving related artists from the Spotify API.
+relatedArtistsUrl :: Artist -> String
+relatedArtistsUrl Artist{..} =
+  intercalate "/" [(uriPath $ fromJust $ parseURI artistUrl), "related-artists"]
 
 -- | Returns a list of all artists that match the given query.
 search :: Authorization -> String -> IO [Artist]
@@ -128,7 +136,7 @@ artist auth query = do
 -- | Retrieves artists related to the given artist, as determined by Spotify.
 relatedArtists :: Authorization -> Artist -> IO [Artist]
 relatedArtists auth artist = do
-  let request = relatedArtistRequest auth artist
+  let request = relatedArtistsRequest auth artist
   response <- H.httpJSON request
   let results = related $ H.getResponseBody response
   return results
