@@ -47,6 +47,9 @@ module Spotify.Artist
   , searchRequest
   ) where
 
+import Data.Function  (on)
+import Data.List      (sortBy)
+
 import Data.Aeson             ((.:), FromJSON(..), withObject)
 import Data.ByteString.Char8  (pack)
 import Network.HTTP.Client    (Request)
@@ -96,4 +99,4 @@ search auth query = do
 artist :: Authorization -> String -> IO Artist
 artist auth query = do
   artists <- search auth query
-  return $ head artists
+  return $ head $ reverse $ sortBy (compare `on` popularity) artists
