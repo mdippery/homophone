@@ -41,19 +41,24 @@ module Spotify.Artist
     -- * Spotify API
 
     -- ** Operations
+  , relatedArtists
   , search
 
     -- * Helpers
+  , relatedArtistRequest
   , searchRequest
   ) where
 
+import qualified Network.HTTP.Simple as H
+
 import Data.Function  (on)
-import Data.List      (sortBy)
+import Data.List      (intercalate, sortBy)
+import Data.Maybe     (fromJust)
 
 import Data.Aeson             ((.:), FromJSON(..), withObject)
 import Data.ByteString.Char8  (pack)
 import Network.HTTP.Client    (Request)
-import Network.HTTP.Simple    (httpJSON, getResponseBody, setRequestHeader, setRequestQueryString)
+import Network.URI            (parseURI, uriAuthority, uriPath, uriRegName)
 
 import Spotify.Auth (Authorization(..), basicAuthorizationToken)
 
@@ -61,6 +66,7 @@ import Spotify.Auth (Authorization(..), basicAuthorizationToken)
 data Artist = Artist
   { spotifyId :: String   -- ^ Spotify ID number
   , spotifyUri :: String  -- ^ Spotify URI
+  , href :: String
   , name :: String        -- ^ Artist's name
   , genres :: [String]    -- ^ Musical genres associated with the artist
   , popularity :: Int     -- ^ Artist's popularity rating on Spotify
@@ -70,6 +76,7 @@ instance FromJSON Artist where
   parseJSON = withObject "Artist" $ \v -> Artist
     <$> v .: "id"
     <*> v .: "uri"
+    <*> v .: "href"
     <*> v .: "name"
     <*> v .: "genres"
     <*> v .: "popularity"
@@ -80,19 +87,36 @@ instance FromJSON SearchResult where
   parseJSON = withObject "SearchResult" $ \v -> SearchResult
     <$> ((v .: "artists") >>= (.: "items"))
 
--- | Creates a request for the given artist query using the given authorization token.
+data RelatedArtists = RelatedArtists { related :: [Artist] } deriving Show
+
+instance FromJSON RelatedArtists where
+  parseJSON = withObject "RelatedArtists" $ \v -> RelatedArtists
+    <$> v .: "artists"
+
+-- | Builds a request for the given artist query using the given
+-- authorization token.
 searchRequest :: Authorization -> String -> Request
 searchRequest Authorization{..} artist
-  = setRequestHeader "Authorization" [pack ("Bearer " ++ accessToken)]
-  $ setRequestQueryString [("type", Just "artist"), ("q", Just (pack artist))]
+  = H.setRequestHeader "Authorization" [pack ("Bearer " ++ accessToken)]
+  $ H.setRequestQueryString [("type", Just "artist"), ("q", Just (pack artist))]
   $ "GET https://api.spotify.com/v1/search"
+
+-- | Builds a request for related artists using the given artist and
+-- authorization token.
+relatedArtistRequest :: Authorization -> Artist -> Request
+relatedArtistRequest Authorization{..} Artist{..}
+  = H.setRequestHeader "Authorization" [pack ("Bearer " ++ accessToken)]
+  $ H.setRequestMethod "GET"
+  $ H.setRequestHost (pack $ uriRegName $ fromJust $ uriAuthority $ fromJust $ parseURI href)
+  $ H.setRequestPath (pack $ intercalate "/" [(uriPath $ fromJust $ parseURI href), "related-artists"])
+  $ H.defaultRequest
 
 -- | Returns a list of all artists that match the given query.
 search :: Authorization -> String -> IO [Artist]
 search auth query = do
   let request = searchRequest auth query
-  response <- httpJSON request
-  let results = artists $ getResponseBody response
+  response <- H.httpJSON request
+  let results = artists $ H.getResponseBody response
   return results
 
 -- | Retrieves the most popular artist for the given query.
@@ -100,3 +124,11 @@ artist :: Authorization -> String -> IO Artist
 artist auth query = do
   artists <- search auth query
   return $ head $ reverse $ sortBy (compare `on` popularity) artists
+
+-- | Retrieves artists related to the given artist, as determined by Spotify.
+relatedArtists :: Authorization -> Artist -> IO [Artist]
+relatedArtists auth artist = do
+  let request = relatedArtistRequest auth artist
+  response <- H.httpJSON request
+  let results = related $ H.getResponseBody response
+  return results
