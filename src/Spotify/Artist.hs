@@ -17,12 +17,31 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
 
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
 
+
+------------------------------------------------------------------------------
+-- |
+-- Module      : Spotify.Artist
+-- Description : Spotify artist data
+-- Copyright   : (C) 2019 Michael Dippery
+-- License     : LGPL-3
+-- Maintainer  : michael@monkey-robot.com
+--
+-- Retrieves Spotify's data for artists.
+--
+------------------------------------------------------------------------------
 
 module Spotify.Artist
   (
     -- * Types
     Artist(..)
+  , artist
+
+    -- * Spotify API
+
+    -- ** Operations
+  , search
 
     -- * Helpers
   , searchRequest
@@ -31,16 +50,17 @@ module Spotify.Artist
 import Data.Aeson             ((.:), FromJSON(..), withObject)
 import Data.ByteString.Char8  (pack)
 import Network.HTTP.Client    (Request)
-import Network.HTTP.Simple    (setRequestHeader, setRequestQueryString)
+import Network.HTTP.Simple    (httpJSON, getResponseBody, setRequestHeader, setRequestQueryString)
 
-import Spotify.Auth (Credentials, basicAuthorizationToken)
+import Spotify.Auth (Authorization(..), basicAuthorizationToken)
 
+-- | An artist.
 data Artist = Artist
-  { spotifyId :: String
-  , spotifyUri :: String
-  , name :: String
-  , genres :: [String]
-  , popularity :: Int
+  { spotifyId :: String   -- ^ Spotify ID number
+  , spotifyUri :: String  -- ^ Spotify URI
+  , name :: String        -- ^ Artist's name
+  , genres :: [String]    -- ^ Musical genres associated with the artist
+  , popularity :: Int     -- ^ Artist's popularity rating on Spotify
   } deriving Show
 
 instance FromJSON Artist where
@@ -51,8 +71,29 @@ instance FromJSON Artist where
     <*> v .: "genres"
     <*> v .: "popularity"
 
-searchRequest :: Credentials -> String -> Request
-searchRequest creds artist
-  = setRequestHeader "Authorization" [pack ("Basic " ++ basicAuthorizationToken creds)]
+data SearchResult = SearchResult { artists :: [Artist] } deriving Show
+
+instance FromJSON SearchResult where
+  parseJSON = withObject "SearchResult" $ \v -> SearchResult
+    <$> ((v .: "artists") >>= (.: "items"))
+
+-- | Creates a request for the given artist query using the given authorization token.
+searchRequest :: Authorization -> String -> Request
+searchRequest Authorization{..} artist
+  = setRequestHeader "Authorization" [pack ("Bearer " ++ accessToken)]
   $ setRequestQueryString [("type", Just "artist"), ("q", Just (pack artist))]
   $ "GET https://api.spotify.com/v1/search"
+
+-- | Returns a list of all artists that match the given query.
+search :: Authorization -> String -> IO [Artist]
+search auth query = do
+  let request = searchRequest auth query
+  response <- httpJSON request
+  let results = artists $ getResponseBody response
+  return results
+
+-- | Retrieves the most popular artist for the given query.
+artist :: Authorization -> String -> IO Artist
+artist auth query = do
+  artists <- search auth query
+  return $ head artists
