@@ -16,7 +16,3 @@ spec = do
   describe "clientSecret" $ do
     it "returns the client secret" $ do
       clientSecret creds == sec
-
-  describe "basicAuthorizationToken" $ do
-    it "returns the payload for the Authorization header" $ do
-      basicAuthorizationToken creds == "YWJjZGVmZzpoaWprbG1u"

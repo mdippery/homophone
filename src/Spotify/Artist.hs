@@ -43,13 +43,6 @@ module Spotify.Artist
     -- ** Operations
   , relatedArtists
   , search
-
-    -- ** URLs
-  , relatedArtistsUrl
-
-    -- * Helpers
-  , relatedArtistsRequest
-  , searchRequest
   ) where
 
 import qualified Network.HTTP.Simple as H
@@ -63,7 +56,7 @@ import Data.ByteString.Char8  (pack)
 import Network.HTTP.Client    (Request)
 import Network.URI            (parseURI, uriAuthority, uriPath, uriRegName)
 
-import Spotify.Auth (Authorization(..), basicAuthorizationToken)
+import Spotify.Auth (Authorization(..))
 
 -- | An artist.
 data Artist = Artist

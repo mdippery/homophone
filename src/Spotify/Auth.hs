@@ -46,10 +46,6 @@ module Spotify.Auth
     -- ** Results
   , Authorization(..)
   , authorization
-
-    -- * Helpers
-  , authRequest
-  , basicAuthorizationToken
   ) where
 
 import Data.List    (intercalate)
