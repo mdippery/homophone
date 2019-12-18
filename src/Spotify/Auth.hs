@@ -37,6 +37,7 @@ module Spotify.Auth
   (
     -- * Types
     Credentials(..)
+  , TokenType(..)
 
     -- * Spotify API
 
@@ -50,7 +51,7 @@ module Spotify.Auth
 
 import Data.List    (intercalate)
 
-import Data.Aeson             ((.:), FromJSON(..), withObject)
+import Data.Aeson             ((.:), FromJSON(..), withObject, withText)
 import Data.ByteString        (ByteString)
 import Data.ByteString.Base64 (encode)
 import Data.ByteString.Char8  (pack, unpack)
@@ -67,10 +68,19 @@ data Credentials = Credentials
 instance Show Credentials where
   show Credentials{..} = intercalate ":" [clientIdentifier, clientSecret]
 
+-- | Authorization token type.
+data TokenType = Bearer
+  deriving Show
+
+instance FromJSON TokenType where
+  parseJSON = withText "TokenType" $ \s ->
+    case s of
+      "bearer" -> return Bearer
+
 -- | Spotify authorization tokens.
 data Authorization = Authorization
   { accessToken :: String   -- ^ Access token for requests to the Spotify API
-  , tokenType :: String     -- ^ Type of token
+  , tokenType :: TokenType  -- ^ Type of token
   , expiresIn :: Int        -- ^ Expiration time, in seconds from creation
   } deriving Show
 
@@ -82,7 +92,7 @@ instance FromJSON Authorization where
 
 -- | Creates a new authorization object with the given access token.
 authorization :: String -> Authorization
-authorization = flip (flip Authorization "bearer") maxBound
+authorization = flip (flip Authorization Bearer) maxBound
 
 -- | Authorization header payload for the given Spotify credentials.
 basicAuthorizationToken :: Credentials -> String
