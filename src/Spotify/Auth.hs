@@ -75,7 +75,7 @@ data TokenType = Bearer
 instance FromJSON TokenType where
   parseJSON = withText "TokenType" $ \s ->
     case s of
-      "bearer" -> return Bearer
+      "Bearer" -> return Bearer
 
 -- | Spotify authorization tokens.
 data Authorization = Authorization
