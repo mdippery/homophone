@@ -19,9 +19,39 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 module Main where
 
+import Data.List (intercalate, sort)
+import System.Environment (getArgs, getProgName)
 import Text.Printf (printf)
+
 import Data.Version (showVersion)
+
+import Homophone.Configuration (configurationValue)
+import Spotify.Artist (artist, name, relatedArtists)
+import Spotify.Auth (Credentials(..), authorize)
 import qualified Paths_homophone as P
 
+artists :: String -> IO String
+artists q = do
+  app <- configurationValue "spotify.client_id"
+  secret <- configurationValue "spotify.client_secret"
+  auth <- authorize (Credentials app secret)
+  a <- artist auth q
+  other <- relatedArtists auth a
+  return $ intercalate "\n" $ sort $ map name other
+
+version :: IO String
+version = do
+  let v = showVersion P.version
+  p <- getProgName
+  return $ printf "%s v%s" p v
+
 main :: IO ()
-main = putStrLn $ printf "homophone v%s" (showVersion P.version)
+main = do
+  argv <- getArgs
+  case argv of
+    ("-V":_) ->
+      version >>= putStrLn
+    ("--version":_) ->
+      version >>= putStrLn
+    (artist:_) ->
+      artists artist >>= putStrLn
