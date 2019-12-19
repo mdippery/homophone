@@ -57,7 +57,7 @@ configurationFile = do
 -- If an error occurs while retrieving the value, this function will return
 -- a @Left@; otherwise, a @Right@ containing the value (as a string) will be
 -- returned.
-configurationValue :: String -> IO (Either String String)
+configurationValue :: Read a => String -> IO (Either String a)
 configurationValue name = do
   let (section, key) = span (/= '.') name
   path <- configurationFile
@@ -67,4 +67,4 @@ configurationValue name = do
     Right f ->
       case lookupValue (pack section) (pack (tail key)) f of
         Left s -> return $ Left s
-        Right v -> return $ Right $ unpack v
+        Right v -> return $ Right $ read $ unpack v
