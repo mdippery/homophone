@@ -35,28 +35,25 @@ import qualified Paths_homophone as P
 lower :: String -> String
 lower = map toLower
 
-artists :: String -> IO String
+artists :: String -> IO ()
 artists q = do
   app <- configurationValue "spotify.client_id"
   secret <- configurationValue "spotify.client_secret"
   auth <- authorize (Credentials app secret)
   a <- artist auth q
   other <- relatedArtists auth a
-  return $ intercalate "\n" $ sortBy (comparing lower) $ map name other
+  putStrLn $ intercalate "\n" $ sortBy (comparing lower) $ map name other
 
-version :: IO String
+version :: IO ()
 version = do
   let v = showVersion P.version
   p <- getProgName
-  return $ printf "%s v%s" p v
+  putStrLn $ printf "%s v%s" p v
 
 main :: IO ()
 main = do
   argv <- getArgs
   case argv of
-    ("-V":_) ->
-      version >>= putStrLn
-    ("--version":_) ->
-      version >>= putStrLn
-    (artist:_) ->
-      artists artist >>= putStrLn
+    ("-V":_)        -> version
+    ("--version":_) -> version
+    (artist:_)      -> artists artist
