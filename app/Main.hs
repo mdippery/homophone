@@ -23,6 +23,8 @@ import Data.Char (toLower)
 import Data.Ord (comparing)
 import Data.List (intercalate, sortBy)
 import System.Environment (getArgs, getProgName)
+import System.Exit (ExitCode(..), exitWith)
+import System.IO (hPutStrLn, stderr)
 import Text.Printf (printf)
 
 import Data.Version (showVersion)
@@ -35,14 +37,28 @@ import qualified Paths_homophone as P
 lower :: String -> String
 lower = map toLower
 
+oops :: String -> IO ()
+oops = hPutStrLn stderr
+
+die :: Int -> String -> IO ()
+die code msg = do
+  oops msg
+  exitWith (ExitFailure code)
+
 artists :: String -> IO ()
 artists q = do
-  app <- configurationValue "spotify.client_id"
-  secret <- configurationValue "spotify.client_secret"
-  auth <- authorize (Credentials app secret)
-  a <- artist auth q
-  other <- relatedArtists auth a
-  putStrLn $ intercalate "\n" $ sortBy (comparing lower) $ map name other
+  app' <- configurationValue "spotify.client_id"
+  secret' <- configurationValue "spotify.client_secret"
+  case (app', secret') of
+    (Right app, Right secret) -> do
+      auth <- authorize (Credentials app secret)
+      a <- artist auth q
+      other <- relatedArtists auth a
+      putStrLn $ intercalate "\n" $ sortBy (comparing lower) $ map name other
+    (Left s, _) ->
+      die 1 s
+    (_, Left s) ->
+      die 1 s
 
 version :: IO ()
 version = do

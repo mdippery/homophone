@@ -53,14 +53,18 @@ configurationFile = do
 -- The value should be a period-separated path consisting of the section
 -- and key name. For example, to get the Spotify application ID, pass
 -- @spotify.client_id@ as the key parameter.
-configurationValue :: String -> IO String
+--
+-- If an error occurs while retrieving the value, this function will return
+-- a @Left@; otherwise, a @Right@ containing the value (as a string) will be
+-- returned.
+configurationValue :: String -> IO (Either String String)
 configurationValue name = do
   let (section, key) = span (/= '.') name
   path <- configurationFile
   res <- readIniFile path
   case res of
-    Left s -> return ""
+    Left s -> return $ Left s
     Right f ->
       case lookupValue (pack section) (pack (tail key)) f of
-        Left s -> return ""
-        Right v -> return (unpack v)
+        Left s -> return $ Left s
+        Right v -> return $ Right $ unpack v
