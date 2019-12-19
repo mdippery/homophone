@@ -63,7 +63,7 @@ data Artist = Artist
   { spotifyId :: String   -- ^ Spotify ID number
   , spotifyUri :: String  -- ^ Spotify URI
   , artistUrl :: String   -- ^ URL for obtaining artist info from the Spotify API
-  , name :: String        -- ^ Artist's name
+  , artistName :: String  -- ^ Artist's name
   , genres :: [String]    -- ^ Musical genres associated with the artist
   , popularity :: Int     -- ^ Artist's popularity rating on Spotify
   } deriving Show

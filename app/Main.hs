@@ -30,7 +30,7 @@ import Text.Printf (printf)
 import Data.Version (showVersion)
 
 import Homophone.Configuration (configurationValue)
-import Spotify.Artist (artist, name, relatedArtists)
+import Spotify.Artist (artist, artistName, relatedArtists)
 import Spotify.Auth (Credentials(..), authorize)
 import qualified Paths_homophone as P
 
@@ -54,7 +54,7 @@ artists q = do
       auth <- authorize (Credentials app secret)
       a <- artist auth q
       other <- relatedArtists auth a
-      putStrLn $ intercalate "\n" $ sortBy (comparing lower) $ map name other
+      putStrLn $ intercalate "\n" $ sortBy (comparing lower) $ map artistName other
     (Left s, _) ->
       die 1 s
     (_, Left s) ->
