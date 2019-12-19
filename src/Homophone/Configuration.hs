@@ -17,6 +17,18 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -}
 
 
+------------------------------------------------------------------------------
+-- |
+-- Module      : Homophone.Configuration
+-- Description : Application configuration
+-- Copyright   : (C) 2019 Michael Dippery
+-- License     : LGPL-3
+-- Maintainer  : michael@monkey-robot.com
+--
+-- Allows the Homophone application to retrieve its configuration options.
+--
+------------------------------------------------------------------------------
+
 module Homophone.Configuration where
 
 import System.Directory (XdgDirectory(..), getXdgDirectory)
@@ -26,14 +38,21 @@ import Data.Ini (lookupValue, readIniFile)
 import System.FilePath ((</>))
 import Data.Text (pack, unpack)
 
+-- | Path to the directory where configuration files are stored.
 configurationDirectory :: IO FilePath
 configurationDirectory = getXdgDirectory XdgConfig "homophone"
 
+-- | Path to the configuration file.
 configurationFile :: IO FilePath
 configurationFile = do
   base <- configurationDirectory
   return $ base </> "config.ini"
 
+-- | Returns the value of a configuration option.
+--
+-- The value should be a period-separated path consisting of the section
+-- and key name. For example, to get the Spotify application ID, pass
+-- @spotify.client_id@ as the key parameter.
 configurationValue :: String -> IO String
 configurationValue name = do
   let (section, key) = span (/= '.') name
