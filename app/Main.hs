@@ -19,7 +19,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 module Main where
 
-import Data.List (intercalate, sort)
+import Data.Char (toLower)
+import Data.List (intercalate, sortBy)
 import System.Environment (getArgs, getProgName)
 import Text.Printf (printf)
 
@@ -30,6 +31,9 @@ import Spotify.Artist (artist, name, relatedArtists)
 import Spotify.Auth (Credentials(..), authorize)
 import qualified Paths_homophone as P
 
+compareLower :: String -> String -> Ordering
+compareLower a b = compare (map toLower a) (map toLower b)
+
 artists :: String -> IO String
 artists q = do
   app <- configurationValue "spotify.client_id"
@@ -37,7 +41,7 @@ artists q = do
   auth <- authorize (Credentials app secret)
   a <- artist auth q
   other <- relatedArtists auth a
-  return $ intercalate "\n" $ sort $ map name other
+  return $ intercalate "\n" $ sortBy compareLower $ map name other
 
 version :: IO String
 version = do
