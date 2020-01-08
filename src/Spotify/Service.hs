@@ -169,7 +169,7 @@ authorize app =
       authHdr = "Basic " ++ token
       req     = setRequestHeader "Authorization" [pack authHdr]
               $ setRequestBodyURLEncoded [("grant_type", "client_credentials")]
-              $ "POST https://accounts.spotify.com/api/token"
+                "POST https://accounts.spotify.com/api/token"
    in httpJSON req >>= (return . Result . getResponseBody)
 
 -- | Finds all artists that match the given search query.
@@ -177,7 +177,7 @@ findArtists :: Authorization -> String -> IO (Result [Artist])
 findArtists Authorization{..} q =
   let req = setRequestHeader "Authorization" [pack ("Bearer " ++ accessToken)]
           $ setRequestQueryString [("type", Just "artist"), ("q", Just (pack q))]
-          $ "GET https://api.spotify.com/v1/search"
+            "GET https://api.spotify.com/v1/search"
    in httpJSON req >>= (return . Result . artists . getResponseBody)
 
 -- | Finds a single artist that best matches the given search query.
@@ -188,11 +188,11 @@ findBestArtist auth q =
 -- | Finds all artists that are similar to the given artist.
 relatedArtists :: Authorization -> Artist -> IO (Result [Artist])
 relatedArtists Authorization{..} Artist{..} =
-  let path  = (uriPath $ fromJust $ parseURI artistURL) ++ "/related-artists"
+  let path  = uriPath (fromJust $ parseURI artistURL) ++ "/related-artists"
       host  = uriRegName $ fromJust $ uriAuthority $ fromJust $ parseURI artistURL
       req   = setRequestHeader "Authorization" [pack ("Bearer " ++ accessToken)]
             $ setRequestMethod "GET"
             $ setRequestHost (pack host)
             $ setRequestPath (pack path)
-            $ defaultRequest
+              defaultRequest
    in httpJSON req >>= (return . Result . sort . results . getResponseBody)
