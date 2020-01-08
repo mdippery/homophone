@@ -19,7 +19,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 module Main where
 
-import Data.Char (toLower)
 import Data.Ord (comparing)
 import Data.List (intercalate, sortBy)
 import System.Environment (getArgs, getProgName)
@@ -30,12 +29,15 @@ import Text.Printf (printf)
 import Data.Version (showVersion)
 
 import Homophone.Configuration (configurationValue)
-import Spotify.Artist (artist, artistName, relatedArtists)
-import Spotify.Auth (Credentials(..), authorize)
+import Spotify.Service
+  ( application
+  , artistName
+  , authorize
+  , findBestArtist
+  , relatedArtists
+  , result
+  )
 import qualified Paths_homophone as P
-
-lower :: String -> String
-lower = map toLower
 
 oops :: String -> IO ()
 oops = hPutStrLn stderr
@@ -51,10 +53,10 @@ artists q = do
   secret' <- configurationValue "spotify.client_secret"
   case (app', secret') of
     (Right app, Right secret) -> do
-      auth <- authorize (Credentials app secret)
-      a <- artist auth q
-      other <- relatedArtists auth a
-      putStrLn $ intercalate "\n" $ sortBy (comparing lower) $ map artistName other
+      auth <- authorize (result $ application app secret)
+      artist <- flip findBestArtist q (result auth)
+      others <- relatedArtists (result auth) (result artist)
+      putStrLn $ intercalate "\n" $  map artistName $ result others
     (Left s, _) ->
       die 1 s
     (_, Left s) ->
