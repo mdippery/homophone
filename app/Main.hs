@@ -35,7 +35,6 @@ import Spotify.Service
   , authorize
   , findBestArtist
   , relatedArtists
-  , result
   )
 import qualified Paths_homophone as P
 
@@ -53,10 +52,10 @@ artists q = do
   secret' <- configurationValue "spotify.client_secret"
   case (app', secret') of
     (Right app, Right secret) -> do
-      auth <- authorize (result $ application app secret)
-      artist <- flip findBestArtist q (result auth)
-      others <- relatedArtists (result auth) (result artist)
-      putStrLn $ intercalate "\n" $  map artistName $ result others
+      auth <- authorize $ application app secret
+      artist <- flip findBestArtist q auth
+      others <- relatedArtists auth artist
+      putStrLn $ intercalate "\n" $ map artistName others
     (Left s, _) ->
       die 1 s
     (_, Left s) ->
