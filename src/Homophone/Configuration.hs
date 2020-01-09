@@ -31,12 +31,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 module Homophone.Configuration where
 
-import System.Directory (XdgDirectory(..), getXdgDirectory)
-import System.IO (FilePath(..))
-
 import Data.Ini (lookupValue, readIniFile)
-import System.FilePath ((</>))
 import Data.Text (pack, unpack)
+import System.Directory (XdgDirectory(..), getXdgDirectory)
+import System.FilePath ((</>))
+import System.IO (FilePath(..))
 
 -- | Path to the directory where configuration files are stored.
 configurationDirectory :: IO FilePath
