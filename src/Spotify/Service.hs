@@ -51,6 +51,7 @@ module Spotify.Service
   ) where
 
 import Data.Aeson ((.:), FromJSON(..), withObject, withText)
+import Data.ByteString (ByteString)
 import Data.ByteString.Base64 (encode)
 import Data.ByteString.Char8 (pack, unpack)
 import Data.List (sort)
@@ -156,10 +157,13 @@ authorize app =
                 "POST https://accounts.spotify.com/api/token"
    in httpJSON req >>= (return . getResponseBody)
 
+asHeader :: Authorization -> ByteString
+asHeader Authorization{..} = pack $ show tokenType ++ " " ++ accessToken
+
 -- | Finds all artists that match the given search query.
 findArtists :: Authorization -> String -> IO [Artist]
-findArtists Authorization{..} q =
-  let req = setRequestHeader "Authorization" [pack ("Bearer " ++ accessToken)]
+findArtists auth q =
+  let req = setRequestHeader "Authorization" [asHeader auth]
           $ setRequestQueryString [("type", Just "artist"), ("q", Just (pack q))]
             "GET https://api.spotify.com/v1/search"
    in httpJSON req >>= (return . artists . getResponseBody)
@@ -171,10 +175,10 @@ findBestArtist auth q =
 
 -- | Finds all artists that are similar to the given artist.
 relatedArtists :: Authorization -> Artist -> IO [Artist]
-relatedArtists Authorization{..} Artist{..} =
+relatedArtists auth Artist{..} =
   let path  = uriPath (fromJust $ parseURI artistURL) ++ "/related-artists"
       host  = uriRegName $ fromJust $ uriAuthority $ fromJust $ parseURI artistURL
-      req   = setRequestHeader "Authorization" [pack ("Bearer " ++ accessToken)]
+      req   = setRequestHeader "Authorization" [asHeader auth]
             $ setRequestMethod "GET"
             $ setRequestHost (pack host)
             $ setRequestPath (pack path)
